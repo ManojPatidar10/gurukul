@@ -1,0 +1,65 @@
+name: Build Gurukul APK & iOS
+
+# Free on GitHub Actions: 2,000 build minutes/month on public repos.
+# Builds a release APK you can download, sideload to Android phones,
+# or publish to Google Play Store.
+#
+# iOS requires a Mac — see instructions in mobile/README.md section 4.
+
+on:
+  workflow_dispatch: # Manual trigger from the Actions tab
+  push:
+    branches: [main]
+    paths: ["mobile/**"]
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0"
+          channel: "stable"
+
+      - run: flutter pub get
+
+      - name: Build release APK
+        run: |
+          flutter build apk --release \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - uses: actions/upload-artifact@v4
+          name: gurukul-android-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+
+  # Uncomment below to auto-build iOS when you're ready.
+  # iOS requires: Codemagic free tier (cloud Mac, 500 min/month)
+  # OR: your own Mac + Xcode. For now, use the APK to test on Android.
+  # 
+  # build-ios:
+  #   runs-on: macos-latest
+  #   defaults:
+  #     run:
+  #       working-directory: mobile
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         flutter-version: "3.24.0"
+  #         channel: "stable"
+  #     - run: flutter pub get
+  #     - name: Build iOS
+  #       run: |
+  #         flutter build ios --release \
+  #           --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+  #           --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: gurukul-ios
+  #         path: mobile/build/ios/iphoneos/Runner.app
